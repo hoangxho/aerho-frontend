@@ -92,14 +92,20 @@ export default function ProviderDashboard() {
         <h1 className="text-3xl font-bold uppercase text-gray-900 dark:text-gray-100 mb-4 mt-0 text-left">Dashboard</h1>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <section className="bg-gray-100 dark:bg-gray-800 p-4 rounded-2xl shadow h-[calc(100vh-10rem)] flex flex-col">
+          <section className="bg-[#cfd8e3] dark:bg-gray-800 p-4 rounded-2xl shadow h-[calc(100vh-10rem)] flex flex-col">
             <h2 className="text-lg font-semibold text-gray-700 dark:text-white mb-2">Notes</h2>
-            <ul className="space-y-2">
-              {notes.length === 0 ? null : (
-                notes.map((note, idx) => (
+            <div className="flex-1 overflow-y-auto rounded-xl p-2 bg-[#edf1f7] dark:bg-[#3a3f4b]">
+              {notes.length === 0 && (
+                <div className="flex items-center justify-center h-full text-center text-gray-500 dark:text-gray-400">
+                  No Notes
+                </div>
+              )}
+              <ul className="space-y-2">
+                {notes.length === 0 ? null : (
+                  notes.map((note, idx) => (
                   <li
                     key={idx}
-                    className="bg-white dark:bg-gray-700 px-4 py-2 rounded-full text-black dark:text-white hover:bg-blue-100 dark:hover:bg-blue-600 transition-colors duration-200 cursor-pointer"
+                    className="bg-[#cdddf0] dark:bg-[#5c6370] px-3 py-1.5 rounded-md text-gray-900 dark:text-white hover:bg-[#a8c4f8] dark:hover:bg-blue-700 transition-all duration-200 cursor-pointer"
                     onClick={() => {
                       setActiveTranscript({ name: `Note ${idx + 1}`, full: note, idx, type: "note" });
                       setEditableText(note);
@@ -108,12 +114,13 @@ export default function ProviderDashboard() {
                   >
                     • {note.slice(0, 90)}...
                   </li>
-                ))
-              )}
-            </ul>
+                  ))
+                )}
+              </ul>
+            </div>
           </section>
 
-          <section className="bg-gray-100 dark:bg-gray-800 p-4 rounded-2xl shadow h-[calc(100vh-10rem)] flex flex-col">
+          <section className="bg-[#cfd8e3] dark:bg-gray-800 p-4 rounded-2xl shadow flex flex-col h-[calc(100vh-10rem)]">
             <h2 className="text-lg font-semibold text-gray-700 dark:text-white mb-2 flex items-center gap-2">
               Recordings / Transcript
               {isTranscribing && (
@@ -170,11 +177,11 @@ export default function ProviderDashboard() {
                     }
 
                     setRecordings((prev) => [...prev, file]);
-                    setNotes((prev) => [...prev, soapNote]);
-                    setSummaries((prev) => [...prev, polishedTranscript]);
+                    setNotes((prev) => [soapNote, ...prev]);
+                    setSummaries((prev) => [polishedTranscript, ...prev]);
                     setTranscripts((prev) => [
-                      ...prev,
                       { name: file.name, full: mergedTranscript, summary: polishedTranscript },
+                      ...prev,
                     ]);
                     setProgress(Math.round(((i + 1) / files.length) * 100));
                   } catch (error) {
@@ -196,31 +203,44 @@ export default function ProviderDashboard() {
             />
             {/* Uploaded file list removed */}
             {/* Transcript summaries with toggle */}
-            <ul className="space-y-2 mt-4">
-              {transcripts.map((item, idx) => (
-                <li
-                  key={idx}
-                  className="bg-white dark:bg-gray-700 px-4 py-2 rounded-full text-black dark:text-white hover:bg-blue-100 dark:hover:bg-blue-600 transition-colors duration-200 cursor-pointer"
-                  onClick={() => {
-                    setActiveTranscript({ ...item, idx, type: "transcript" });
-                    setEditableText(item.full);
-                    setIsEditing(false);
-                  }}
-                >
-                  • Summary: {item.summary.slice(0, 90)}...
-                </li>
-              ))}
-            </ul>
-          </section>
-
-          <section className="bg-gray-100 dark:bg-gray-800 p-4 rounded-2xl shadow h-[calc(100vh-10rem)] flex flex-col">
-            <h2 className="text-lg font-semibold text-gray-700 dark:text-white mb-2">Patient Summaries</h2>
-            <ul className="space-y-2">
-              {summaries.length === 0 ? null : (
-                summaries.map((summary, idx) => (
+            <div className="flex-1 h-full overflow-y-auto rounded-xl p-2 bg-[#edf1f7] dark:bg-[#3a3f4b] mt-2">
+              {transcripts.length === 0 && (
+                <div className="flex items-center justify-center h-full text-center text-gray-500 dark:text-gray-400">
+                  No Transcripts
+                </div>
+              )}
+              <ul className="space-y-2">
+                {transcripts.map((item, idx) => (
                   <li
                     key={idx}
-                    className="bg-white dark:bg-gray-700 px-4 py-2 rounded-full text-black dark:text-white hover:bg-blue-100 dark:hover:bg-blue-600 transition-colors duration-200 cursor-pointer"
+                    className="bg-[#cdddf0] dark:bg-[#5c6370] px-3 py-1.5 rounded-md text-gray-900 dark:text-white hover:bg-[#a8c4f8] dark:hover:bg-blue-700 transition-all duration-200 cursor-pointer"
+                    onClick={() => {
+                      setActiveTranscript({ ...item, idx, type: "transcript" });
+                      setEditableText(item.full);
+                      setIsEditing(false);
+                    }}
+                  >
+                    • {item.full.slice(0, 90)}...
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </section>
+
+          <section className="bg-[#cfd8e3] dark:bg-gray-800 p-4 rounded-2xl shadow h-[calc(100vh-10rem)] flex flex-col">
+            <h2 className="text-lg font-semibold text-gray-700 dark:text-white mb-2">Patient Summaries</h2>
+            <div className="flex-1 overflow-y-auto rounded-xl p-2 bg-[#edf1f7] dark:bg-[#3a3f4b]">
+              {summaries.length === 0 && (
+                <div className="flex items-center justify-center h-full text-center text-gray-500 dark:text-gray-400">
+                  No Summaries
+                </div>
+              )}
+              <ul className="space-y-2">
+                {summaries.length === 0 ? null : (
+                  summaries.map((summary, idx) => (
+                  <li
+                    key={idx}
+                    className="bg-[#cdddf0] dark:bg-[#5c6370] px-3 py-1.5 rounded-md text-gray-900 dark:text-white hover:bg-[#a8c4f8] dark:hover:bg-blue-700 transition-all duration-200 cursor-pointer"
                     onClick={() => {
                       setActiveTranscript({ name: `Summary ${idx + 1}`, full: summary, idx, type: "summary" });
                       setEditableText(summary);
@@ -229,9 +249,10 @@ export default function ProviderDashboard() {
                   >
                     • {summary.slice(0, 90)}...
                   </li>
-                ))
-              )}
-            </ul>
+                  ))
+                )}
+              </ul>
+            </div>
           </section>
         </div>
             {/* Transcript popup bubble */}
@@ -241,7 +262,7 @@ export default function ProviderDashboard() {
           onClick={() => setActiveTranscript(null)}
         >
           <div
-            className="relative bg-white dark:bg-gray-800 mt-24 max-w-[95vw] w-full max-h-[93vh] overflow-y-auto rounded-3xl shadow-2xl px-8 py-6 text-black dark:text-white"
+            className="relative bg-white dark:bg-gray-800 mt-24 max-w-[95vw] w-full max-h-[93vh] rounded-3xl shadow-2xl px-8 py-6 text-black dark:text-white"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Sticky header/title */}
@@ -312,7 +333,7 @@ export default function ProviderDashboard() {
               </button>
             </div>
             {/* Scrollable transcript content */}
-            <div>
+            <div className="overflow-y-auto max-h-[70vh] pr-2">
               {isEditing ? (
                 <textarea
                   value={editableText}
