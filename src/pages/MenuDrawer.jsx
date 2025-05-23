@@ -1,6 +1,8 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { UserIcon, CreditCardIcon, UsersIcon, DocumentDuplicateIcon, Squares2X2Icon, QuestionMarkCircleIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
+import { updateEmail, updatePassword, EmailAuthProvider, reauthenticateWithCredential, sendEmailVerification } from "firebase/auth";
+import { auth } from "../firebase";
 
 export default function MenuDrawer({
   isMenuOpen,
@@ -99,10 +101,22 @@ export default function MenuDrawer({
   }, [isMenuOpen]);
 
   return (
-    <div className={`fixed top-16 bottom-10 right-10 w-80 bg-white dark:bg-gray-800 shadow-lg z-50 rounded-3xl p-6 transform transition-all duration-500 ease-in-out ${isMenuOpen ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'}`}>
-      <div className="relative w-full h-full overflow-hidden">
+    <div
+      tabIndex={-1}
+      onKeyDown={(e) => e.stopPropagation()}
+      className={`fixed top-16 bottom-10 right-10 w-80 bg-white dark:bg-[#253447] shadow-lg z-50 rounded-3xl p-6 transform transition-all duration-500 ease-in-out overflow-y-auto focus:outline-none ${isMenuOpen ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'}`}
+    >
+      <div
+        className="relative w-full h-full overflow-hidden focus:outline-none"
+        tabIndex={-1}
+        style={{ outline: "none" }}
+      >
         {/* Main Menu */}
-        <div className={`absolute top-0 left-0 w-full transition-transform duration-500 ease-in-out ${menuPage === "main" ? "translate-x-0" : "-translate-x-full"}`}>
+        <div
+          className={`absolute top-0 left-0 w-full transition-transform duration-500 ease-in-out ${menuPage === "main" ? "translate-x-0" : "-translate-x-full"}`}
+          tabIndex={menuPage === "main" ? 0 : -1}
+          aria-hidden={menuPage !== "main"}
+        >
           <div className="p-6 space-y-6 text-gray-800 dark:text-white w-full">
             {/* Menu Items */}
             <div className="flex items-center transform transition-transform duration-200 hover:scale-105 hover:font-semibold cursor-pointer" onClick={() => setMenuPage("account")}>
@@ -137,7 +151,11 @@ export default function MenuDrawer({
           </div>
         </div>
         {/* Account Page */}
-        <div className={`absolute top-0 left-full w-full transition-transform duration-500 ease-in-out ${menuPage === "account" ? "-translate-x-full" : "translate-x-0"}`}>
+        <div
+          className={`absolute top-0 left-full w-full transition-transform duration-500 ease-in-out ${menuPage === "account" ? "-translate-x-full opacity-100 pointer-events-auto" : "translate-x-0 opacity-0 pointer-events-none"}`}
+          tabIndex={menuPage === "account" ? 0 : -1}
+          aria-hidden={menuPage !== "account"}
+        >
           <div className="p-6 space-y-6 text-gray-800 dark:text-white w-full">
             <div
               onClick={() => {
@@ -186,9 +204,19 @@ export default function MenuDrawer({
                   />
                   <button
                     className="px-4 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs"
-                    onClick={() => {
-                      // Firebase updateEmail logic placeholder
-                      setShowChangeEmail(false);
+                    onClick={async () => {
+                      const user = auth.currentUser;
+                      const credential = EmailAuthProvider.credential(user.email, currentPassword);
+                      try {
+                        await reauthenticateWithCredential(user, credential);
+                        await sendEmailVerification(user, {
+                          url: "https://aerho.io/__/auth/action"
+                        });
+                        alert("Verification email sent. Please check your inbox and verify the new email before proceeding.");
+                      } catch (error) {
+                        console.error("Email update error:", error);
+                        alert("Failed to send verification email. " + error.message);
+                      }
                     }}
                   >
                     Update Email
@@ -221,9 +249,24 @@ export default function MenuDrawer({
                   />
                   <button
                     className="px-4 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs"
-                    onClick={() => {
-                      // Firebase updatePassword logic placeholder
-                      setShowChangePassword(false);
+                    onClick={async () => {
+                      const user = auth.currentUser;
+                      const credential = EmailAuthProvider.credential(user.email, currentPassword);
+                      try {
+                        await reauthenticateWithCredential(user, credential);
+                        await user.reload(); // Refresh user data
+                        if (!user.emailVerified) {
+                          await sendEmailVerification(user);
+                          alert("Please verify your email before changing your password. A verification email has been sent.");
+                          return;
+                        }
+                        await updatePassword(user, newPassword);
+                        alert("Password updated successfully!");
+                        setShowChangePassword(false);
+                      } catch (error) {
+                        console.error("Password update error:", error);
+                        alert("Failed to update password. " + error.message);
+                      }
                     }}
                   >
                     Update Password
@@ -234,7 +277,11 @@ export default function MenuDrawer({
           </div>
         </div>
         {/* Subscription Page */}
-        <div className={`absolute top-0 left-full w-full transition-transform duration-500 ease-in-out ${menuPage === "subscription" ? "-translate-x-full" : "translate-x-0"}`}>
+        <div
+          className={`absolute top-0 left-full w-full transition-transform duration-500 ease-in-out ${menuPage === "subscription" ? "-translate-x-full opacity-100 pointer-events-auto" : "translate-x-0 opacity-0 pointer-events-none"}`}
+          tabIndex={menuPage === "subscription" ? 0 : -1}
+          aria-hidden={menuPage !== "subscription"}
+        >
           <div className="p-6 space-y-6 text-gray-800 dark:text-white w-full">
             <div
               onClick={() => setMenuPage("main")}
@@ -278,7 +325,11 @@ export default function MenuDrawer({
           </div>
         </div>
         {/* Team Members Page */}
-        <div className={`absolute top-0 left-full w-full transition-transform duration-500 ease-in-out ${menuPage === "team" ? "-translate-x-full" : "translate-x-0"}`}>
+        <div
+          className={`absolute top-0 left-full w-full transition-transform duration-500 ease-in-out ${menuPage === "team" ? "-translate-x-full opacity-100 pointer-events-auto" : "translate-x-0 opacity-0 pointer-events-none"}`}
+          tabIndex={menuPage === "team" ? 0 : -1}
+          aria-hidden={menuPage !== "team"}
+        >
           <TeamMembersSection
             setMenuPage={setMenuPage}
             teamMembers={teamMembers}
@@ -286,18 +337,26 @@ export default function MenuDrawer({
           />
         </div>
         {/* Referrals Page */}
-        <ReferralsSection
-          menuPage={menuPage}
-          setMenuPage={setMenuPage}
-          referralsThisPeriod={referralsThisPeriod}
-          freeMonthsEarned={freeMonthsEarned}
-          showReward={showReward}
-          neededForFreeMonth={neededForFreeMonth}
-          totalReferrals={totalReferrals}
-          referrals={referrals}
-        />
+        {menuPage === "referrals" && (
+          <ReferralsSection
+            menuPage={menuPage}
+            setMenuPage={setMenuPage}
+            referralsThisPeriod={referralsThisPeriod}
+            freeMonthsEarned={freeMonthsEarned}
+            showReward={showReward}
+            neededForFreeMonth={neededForFreeMonth}
+            totalReferrals={totalReferrals}
+            referrals={referrals}
+            tabIndex={0}
+            aria-hidden={false}
+          />
+        )}
         {/* Support Page */}
-        <div className={`absolute top-0 left-full w-full transition-transform duration-500 ease-in-out ${menuPage === "support" ? "-translate-x-full" : "translate-x-0"}`}>
+        <div
+          className={`absolute top-0 left-full w-full transition-transform duration-500 ease-in-out ${menuPage === "support" ? "-translate-x-full opacity-100 pointer-events-auto" : "translate-x-0 opacity-0 pointer-events-none"}`}
+          tabIndex={menuPage === "support" ? 0 : -1}
+          aria-hidden={menuPage !== "support"}
+        >
           <div className="p-6 space-y-6 text-gray-800 dark:text-white w-full">
             <div
               onClick={() => setMenuPage("main")}
@@ -305,15 +364,54 @@ export default function MenuDrawer({
             >
               ← Back
             </div>
-            <div>
-              <strong>Support Page</strong>
+            <div className="space-y-4 text-sm dark:text-gray-300">
+              <div className="text-lg font-semibold text-white dark:text-white">Support</div>
+              <p>If you're experiencing issues or need help with Aerho, please reach out to us using one of the options below:</p>
+              <ul className="space-y-2 list-disc list-inside">
+                <li>
+                  Email us at{" "}
+                  <a href="mailto:support@aerho.io" className="text-blue-400 hover:underline">
+                    support@aerho.io
+                  </a>
+                </li>
+                <li>Chat with us live in the bottom-right corner</li>
+                <li>
+                  Visit our{" "}
+                  <a
+                    href="https://aerho.io/help"
+                    className="text-blue-400 hover:underline"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Help Center
+                  </a>{" "}
+                  for FAQs
+                </li>
+              </ul>
+              <div className="mt-4">
+                <button
+                  className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded shadow"
+                  onClick={() => window.open("mailto:support@aerho.io", "_blank")}
+                >
+                  Contact Support
+                </button>
+              </div>
             </div>
           </div>
         </div>
         {/* Templates Page */}
-        <TemplateUploadSection menuPage={menuPage} setMenuPage={setMenuPage} />
+        <TemplateUploadSection
+          menuPage={menuPage}
+          setMenuPage={setMenuPage}
+          tabIndex={menuPage === "templates" ? 0 : -1}
+          aria-hidden={menuPage !== "templates"}
+        />
         {/* Settings Page */}
-        <div className={`absolute top-0 left-full w-full transition-transform duration-500 ease-in-out ${menuPage === "settings" ? "-translate-x-full" : "translate-x-0"}`}>
+        <div
+          className={`absolute top-0 left-full w-full transition-transform duration-500 ease-in-out ${menuPage === "settings" ? "-translate-x-full opacity-100 pointer-events-auto" : "translate-x-0 opacity-0 pointer-events-none"}`}
+          tabIndex={menuPage === "settings" ? 0 : -1}
+          aria-hidden={menuPage !== "settings"}
+        >
           <div className="p-6 space-y-6 text-gray-800 dark:text-white w-full">
             <div
               onClick={() => setMenuPage("main")}
@@ -537,10 +635,17 @@ function ReferralsSection({
   neededForFreeMonth,
   totalReferrals,
   referrals,
+  tabIndex,
+  ...rest
 }) {
   const [showReferralInfo, setShowReferralInfo] = React.useState(true);
   return (
-    <div className={`absolute top-0 left-full w-full transition-transform duration-500 ease-in-out ${menuPage === "referrals" ? "-translate-x-full" : "translate-x-0"}`}>
+    <div
+      className={`absolute top-0 left-full w-full transition-transform duration-500 ease-in-out ${menuPage === "referrals" ? "-translate-x-full" : "translate-x-0"}`}
+      tabIndex={typeof tabIndex === "undefined" ? (menuPage === "referrals" ? 0 : -1) : tabIndex}
+      aria-hidden={menuPage !== "referrals"}
+      {...rest}
+    >
       <div className="p-6 space-y-6 text-gray-800 dark:text-white w-full flex flex-col h-full">
         <div
           onClick={() => setMenuPage("main")}
@@ -677,7 +782,7 @@ function ReferralsSection({
   );
 }
 // TemplateUploadSection component for "Templates Page"
-function TemplateUploadSection({ menuPage, setMenuPage }) {
+function TemplateUploadSection({ menuPage, setMenuPage, tabIndex, ...rest }) {
   const [selectedFiles, setSelectedFiles] = React.useState([]);
   const [templateText, setTemplateText] = React.useState("");
   const [submitting, setSubmitting] = React.useState(false);
@@ -714,7 +819,12 @@ function TemplateUploadSection({ menuPage, setMenuPage }) {
   };
 
   return (
-    <div className={`absolute top-0 left-full w-full transition-transform duration-500 ease-in-out ${menuPage === "templates" ? "-translate-x-full" : "translate-x-0"}`}>
+    <div
+      className={`absolute top-0 left-full w-full transition-transform duration-500 ease-in-out ${menuPage === "templates" ? "-translate-x-full opacity-100 pointer-events-auto" : "translate-x-0 opacity-0 pointer-events-none"}`}
+      aria-hidden={menuPage !== "templates"}
+      tabIndex={typeof tabIndex === "undefined" ? (menuPage === "templates" ? 0 : -1) : tabIndex}
+      {...rest}
+    >
       <div className="p-0 pt-0 text-gray-800 dark:text-white w-full">
         <div
           onClick={() => setMenuPage("main")}
@@ -724,7 +834,7 @@ function TemplateUploadSection({ menuPage, setMenuPage }) {
         </div>
         <div className="px-6 pt-4 pb-6 w-full">
           <div className="text-lg font-semibold mb-2">Upload Templates</div>
-          <p className="text-sm text-gray-500 mt-1 mb-4">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 mb-4">
             Upload your preferred SOAP note templates here (Word, PDF, image, or free text). Aerho will match your future notes to your style. Uploading a new set will replace your previous templates.
           </p>
           <form onSubmit={handleSubmit} className="flex flex-col flex-1">

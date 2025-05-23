@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { auth } from '../firebase';
 import { db } from '../firebase';
+import { PhoneAuthProvider, signInWithPhoneNumber } from 'firebase/auth';
+import { getRecaptchaVerifier } from '../firebase';
 
 export default function CreateAccount() {
   const navigate = useNavigate();
@@ -21,6 +23,23 @@ export default function CreateAccount() {
   const [error, setError] = useState('');
   const [terms, setTerms] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState('');
+  const [countryCode, setCountryCode] = useState('+1');
+
+  useEffect(() => {
+    if (!window.recaptchaVerifier) {
+      window.recaptchaVerifier = getRecaptchaVerifier();
+      window.recaptchaVerifier.render().then((widgetId) => {
+        console.log("reCAPTCHA rendered:", widgetId);
+      });
+    }
+  }, []);
+
+  const setUpRecaptcha = (number) => {
+    if (!window.recaptchaVerifier) {
+      window.recaptchaVerifier = getRecaptchaVerifier();
+    }
+    return signInWithPhoneNumber(auth, number, window.recaptchaVerifier);
+  };
 
   // Password strength function
   const checkPasswordStrength = (pwd) => {
@@ -41,6 +60,7 @@ export default function CreateAccount() {
     setError('');
     if (!terms) {
       setError('You must accept the terms and conditions.');
+      console.log('Terms not accepted');
       return;
     }
     if (password !== retypePassword) {
@@ -55,13 +75,28 @@ export default function CreateAccount() {
         email,
         role,
         referral,
+        createdAt: new Date().toISOString(),
       };
       if (role === 'provider') {
         userData.clinicName = clinicName;
         userData.specialty = specialty;
       }
       await setDoc(doc(db, 'users', userCred.user.uid), userData);
-      navigate('/');
+      // Redirect to verify-account after account creation
+      console.log('User account created, navigating to verify-account with email:', email);
+      // 1. Fix countryCode formatting
+      const fullPhoneNumber = `${countryCode}${phone}`;
+      // 3. Move getRecaptchaVerifier().render() before submit
+      if (!window.recaptchaVerifier) {
+        window.recaptchaVerifier = getRecaptchaVerifier();
+        await window.recaptchaVerifier.render();
+      }
+      // 2. Strengthen recaptchaVerifier handling
+      const appVerifier = window.recaptchaVerifier || getRecaptchaVerifier();
+      console.log("Using phone number:", fullPhoneNumber);
+      console.log("App verifier object:", appVerifier);
+      const confirmationResult = await signInWithPhoneNumber(auth, fullPhoneNumber, appVerifier);
+      navigate('/verify-account', { state: { verificationId: confirmationResult.verificationId } });
     } catch (err) {
       setError(err.message || 'Could not create account');
     }
@@ -91,13 +126,25 @@ export default function CreateAccount() {
           </div>
           <div>
             <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Phone Number</label>
-            <input
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              required
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <div className="flex space-x-2">
+              <input
+                type="text"
+                value={countryCode}
+                onChange={(e) => setCountryCode(e.target.value)}
+                className="w-20 px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <input
+                type="tel"
+                value={phone.replace(/\D/g, '').slice(0, 10)}
+                onChange={(e) => {
+                  const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
+                  setPhone(digits);
+                }}
+                placeholder="e.g., 1234567890"
+                required
+                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
           </div>
           <div>
             <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Email</label>
@@ -223,7 +270,10 @@ export default function CreateAccount() {
           {error && <p className="text-red-600 text-sm font-semibold">{error}</p>}
           <button
             type="submit"
-            className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition active:scale-95"
+            disabled={!terms}
+            className={`w-full py-2 rounded-md transition active:scale-95 ${
+              terms ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-400 text-white cursor-not-allowed'
+            }`}
           >
             Create Account
           </button>
@@ -237,6 +287,7 @@ export default function CreateAccount() {
           </button>
         </div>
       </div>
+      <div id="recaptcha-container"></div>
     </div>
   );
 }

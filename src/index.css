@@ -1,3 +1,23 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Universal scrollbar override */
+::-webkit-scrollbar {
+  width: 6px;
+  background-color: transparent; /* Fallback */
+}
+
+::-webkit-scrollbar-track {
+  background-color: #1e293b; /* match modal background */
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #3b4b5b; /* muted dark blue */
+  border-radius: 8px;
+  border: none;
+}
+
+::-webkit-scrollbar-corner {
+  background-color: #1e293b; /* prevent white corner in Safari */
+}

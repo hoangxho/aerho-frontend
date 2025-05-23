@@ -1,3 +1,5 @@
+import { getDoc, doc } from 'firebase/firestore';
+import { db } from '../firebase';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
@@ -9,11 +11,21 @@ export default function ProviderLogin() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
+
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      navigate('/provider-dashboard');
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const uid = userCredential.user.uid;
+      const docRef = doc(db, 'users', uid);
+      const docSnap = await getDoc(docRef);
+      const role = docSnap.data()?.role;
+
+      if (role === 'provider') {
+        navigate('/provider-dashboard');
+      } else {
+        setError('Access denied: not a provider account.');
+      }
     } catch (err) {
       console.error("Login error:", err.message);
       setError("Invalid email or password");

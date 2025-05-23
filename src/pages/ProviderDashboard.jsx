@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import icon from "../assets/icon.png";
 import MenuDrawer from "./MenuDrawer"; // <-- FIXED: use ./MenuDrawer instead of ../MenuDrawer
+import { getDoc, doc } from "firebase/firestore";
+import { auth, db } from "../firebase";
 
 export default function ProviderDashboard() {
   const [theme, setTheme] = useState(() =>
@@ -43,6 +45,23 @@ export default function ProviderDashboard() {
       document.documentElement.classList.remove("dark");
     }
   }, []);
+
+  // Role-based access control: Only allow providers
+  useEffect(() => {
+    const checkRole = async () => {
+      const user = auth.currentUser;
+      if (!user) return navigate("/login");
+      const docRef = doc(db, "users", user.uid);
+      const docSnap = await getDoc(docRef);
+      const role = docSnap.data()?.role;
+
+      if (role !== "provider") {
+        navigate("/unauthorized");
+      }
+    };
+
+    checkRole();
+  }, [navigate]);
 
   const toggleTheme = () => {
     const newTheme = theme === "dark" ? "light" : "dark";
@@ -92,9 +111,9 @@ export default function ProviderDashboard() {
         <h1 className="text-3xl font-bold uppercase text-gray-900 dark:text-gray-100 mb-4 mt-0 text-left">Dashboard</h1>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <section className="bg-[#cfd8e3] dark:bg-gray-800 p-4 rounded-2xl shadow h-[calc(100vh-10rem)] flex flex-col">
+          <section className="bg-[#cfd8e3] dark:bg-[#1e293b] p-4 rounded-2xl shadow h-[calc(100vh-10rem)] flex flex-col">
             <h2 className="text-lg font-semibold text-gray-700 dark:text-white mb-2">Notes</h2>
-            <div className="flex-1 overflow-y-auto rounded-xl p-2 bg-[#edf1f7] dark:bg-[#3a3f4b]">
+            <div className="flex-1 overflow-y-auto rounded-xl p-2 bg-[#edf1f7] dark:bg-[#2c3a4a] scrollbar-thin scrollbar-thumb-[#3b4a60] scrollbar-track-[#2c3a4a] dark:scrollbar-thumb-[#506682] dark:scrollbar-track-[#1e2a38] scrollbar-corner-transparent">
               {notes.length === 0 && (
                 <div className="flex items-center justify-center h-full text-center text-gray-500 dark:text-gray-400">
                   No Notes
@@ -105,14 +124,14 @@ export default function ProviderDashboard() {
                   notes.map((note, idx) => (
                   <li
                     key={idx}
-                    className="bg-[#cdddf0] dark:bg-[#5c6370] px-3 py-1.5 rounded-md text-gray-900 dark:text-white hover:bg-[#a8c4f8] dark:hover:bg-blue-700 transition-all duration-200 cursor-pointer"
+                    className="bg-[#cdddf0] dark:bg-[#4b5e76] px-3 py-1.5 rounded-md text-gray-900 dark:text-white hover:bg-[#a8c4f8] dark:hover:bg-blue-700 transition-all duration-200 cursor-pointer"
                     onClick={() => {
                       setActiveTranscript({ name: `Note ${idx + 1}`, full: note, idx, type: "note" });
                       setEditableText(note);
                       setIsEditing(false);
                     }}
                   >
-                    • {note.slice(0, 90)}...
+                    • {note.patientName ?? note.slice(0, 90)}...
                   </li>
                   ))
                 )}
@@ -120,7 +139,7 @@ export default function ProviderDashboard() {
             </div>
           </section>
 
-          <section className="bg-[#cfd8e3] dark:bg-gray-800 p-4 rounded-2xl shadow flex flex-col h-[calc(100vh-10rem)]">
+          <section className="bg-[#cfd8e3] dark:bg-[#1e293b] p-4 rounded-2xl shadow flex flex-col h-[calc(100vh-10rem)]">
             <h2 className="text-lg font-semibold text-gray-700 dark:text-white mb-2 flex items-center gap-2">
               Recordings / Transcript
               {isTranscribing && (
@@ -203,7 +222,7 @@ export default function ProviderDashboard() {
             />
             {/* Uploaded file list removed */}
             {/* Transcript summaries with toggle */}
-            <div className="flex-1 h-full overflow-y-auto rounded-xl p-2 bg-[#edf1f7] dark:bg-[#3a3f4b] mt-2">
+            <div className="flex-1 h-full overflow-y-auto rounded-xl p-2 bg-[#edf1f7] dark:bg-[#2c3a4a] mt-2 scrollbar-thin scrollbar-thumb-[#3b4a60] scrollbar-track-[#2c3a4a] dark:scrollbar-thumb-[#506682] dark:scrollbar-track-[#1e2a38] scrollbar-corner-transparent">
               {transcripts.length === 0 && (
                 <div className="flex items-center justify-center h-full text-center text-gray-500 dark:text-gray-400">
                   No Transcripts
@@ -213,23 +232,23 @@ export default function ProviderDashboard() {
                 {transcripts.map((item, idx) => (
                   <li
                     key={idx}
-                    className="bg-[#cdddf0] dark:bg-[#5c6370] px-3 py-1.5 rounded-md text-gray-900 dark:text-white hover:bg-[#a8c4f8] dark:hover:bg-blue-700 transition-all duration-200 cursor-pointer"
+                    className="bg-[#cdddf0] dark:bg-[#4b5e76] px-3 py-1.5 rounded-md text-gray-900 dark:text-white hover:bg-[#a8c4f8] dark:hover:bg-blue-700 transition-all duration-200 cursor-pointer"
                     onClick={() => {
                       setActiveTranscript({ ...item, idx, type: "transcript" });
                       setEditableText(item.full);
                       setIsEditing(false);
                     }}
                   >
-                    • {item.full.slice(0, 90)}...
+                    • {item.patientName ?? item.full.slice(0, 90)}...
                   </li>
                 ))}
               </ul>
             </div>
           </section>
 
-          <section className="bg-[#cfd8e3] dark:bg-gray-800 p-4 rounded-2xl shadow h-[calc(100vh-10rem)] flex flex-col">
+          <section className="bg-[#cfd8e3] dark:bg-[#1e293b] p-4 rounded-2xl shadow h-[calc(100vh-10rem)] flex flex-col">
             <h2 className="text-lg font-semibold text-gray-700 dark:text-white mb-2">Patient Summaries</h2>
-            <div className="flex-1 overflow-y-auto rounded-xl p-2 bg-[#edf1f7] dark:bg-[#3a3f4b]">
+            <div className="flex-1 overflow-y-auto rounded-xl p-2 bg-[#edf1f7] dark:bg-[#2c3a4a] scrollbar-thin scrollbar-thumb-[#3b4a60] scrollbar-track-[#2c3a4a] dark:scrollbar-thumb-[#506682] dark:scrollbar-track-[#1e2a38] scrollbar-corner-transparent">
               {summaries.length === 0 && (
                 <div className="flex items-center justify-center h-full text-center text-gray-500 dark:text-gray-400">
                   No Summaries
@@ -240,14 +259,14 @@ export default function ProviderDashboard() {
                   summaries.map((summary, idx) => (
                   <li
                     key={idx}
-                    className="bg-[#cdddf0] dark:bg-[#5c6370] px-3 py-1.5 rounded-md text-gray-900 dark:text-white hover:bg-[#a8c4f8] dark:hover:bg-blue-700 transition-all duration-200 cursor-pointer"
+                    className="bg-[#cdddf0] dark:bg-[#4b5e76] px-3 py-1.5 rounded-md text-gray-900 dark:text-white hover:bg-[#a8c4f8] dark:hover:bg-blue-700 transition-all duration-200 cursor-pointer"
                     onClick={() => {
                       setActiveTranscript({ name: `Summary ${idx + 1}`, full: summary, idx, type: "summary" });
                       setEditableText(summary);
                       setIsEditing(false);
                     }}
                   >
-                    • {summary.slice(0, 90)}...
+                    • {summary.patientName ?? summary.slice(0, 90)}...
                   </li>
                   ))
                 )}
@@ -333,7 +352,7 @@ export default function ProviderDashboard() {
               </button>
             </div>
             {/* Scrollable transcript content */}
-            <div className="overflow-y-auto max-h-[70vh] pr-2">
+            <div className="overflow-y-auto max-h-[70vh] pr-2 scrollbar-thin scrollbar-thumb-[#b0c4de] dark:scrollbar-thumb-[#3b4a60] scrollbar-track-transparent dark:scrollbar-track-[#1e293b] scrollbar-corner-transparent">
               {isEditing ? (
                 <textarea
                   value={editableText}
@@ -358,6 +377,12 @@ export default function ProviderDashboard() {
         className={`fixed inset-0 bg-black transition-opacity duration-500 z-40 ${isMenuOpen ? 'opacity-30 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
         onClick={() => setIsMenuOpen(false)}
       />
+    {/* Global scrollbar-corner style */}
+    <style jsx="true">{`
+      ::-webkit-scrollbar-corner {
+        background-color: transparent;
+      }
+    `}</style>
     </>
   );
 }

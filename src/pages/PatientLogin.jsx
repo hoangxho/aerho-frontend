@@ -1,6 +1,8 @@
+import { getDoc, doc } from 'firebase/firestore';
+import { db } from '../firebase';
 import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { useState, useEffect } from 'react';
+import { signInWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../firebase';
 
 export default function PatientLogin() {
@@ -9,11 +11,21 @@ export default function PatientLogin() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
+
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      navigate('/');
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const uid = userCredential.user.uid;
+      const docRef = doc(db, 'users', uid);
+      const docSnap = await getDoc(docRef);
+      const role = docSnap.data()?.role;
+
+      if (role === 'patient') {
+        navigate('/');
+      } else {
+        setError('Access denied: not a patient account.');
+      }
     } catch (err) {
       console.error("Login error:", err.message);
       setError("Invalid email or password");
