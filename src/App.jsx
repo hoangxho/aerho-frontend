@@ -19,6 +19,7 @@ export default function App() {
       <Route path="/verify-account" element={<VerifyAccount />} />
       {/* <Route path="/patient-dashboard" element={<PatientDashboard />} /> */}
       <Route path="/success" element={<Success />} />
+      <Route path="*" element={<Landing />} />
     </Routes>
   );
 }
