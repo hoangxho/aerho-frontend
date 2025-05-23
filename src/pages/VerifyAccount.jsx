@@ -10,22 +10,39 @@ const VerifyAccount = () => {
   const location = useLocation();
   const verificationId = location.state?.verificationId;
 
-  // Check for email verification link on mount
+  // Check for email verification or email recovery link on mount
   useEffect(() => {
     const auth = getAuth();
     const params = new URLSearchParams(window.location.search);
     const mode = params.get('mode');
     const oobCode = params.get('oobCode');
 
-    if (mode === 'verifyEmail' && oobCode) {
-      applyActionCode(auth, oobCode)
-        .then(() => {
-          setSuccess(true);
-          setError('');
-        })
-        .catch(() => {
-          setError('Invalid or expired verification link.');
-        });
+    if (!mode || !oobCode) return;
+
+    switch (mode) {
+      case 'verifyEmail':
+        applyActionCode(auth, oobCode)
+          .then(() => {
+            setSuccess(true);
+            setError('');
+          })
+          .catch(() => {
+            setError('Invalid or expired verification link.');
+          });
+        break;
+      case 'recoverEmail':
+        auth.checkActionCode(oobCode)
+          .then((info) => auth.applyActionCode(oobCode))
+          .then(() => {
+            setSuccess(true);
+            setError('');
+          })
+          .catch(() => {
+            setError('Unable to recover email. The link may be invalid or expired.');
+          });
+        break;
+      default:
+        break;
     }
   }, []);
 
