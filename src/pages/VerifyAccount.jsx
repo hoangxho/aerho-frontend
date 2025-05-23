@@ -32,7 +32,9 @@ const VerifyAccount = () => {
         break;
       case 'recoverEmail':
         auth.checkActionCode(oobCode)
-          .then((info) => auth.applyActionCode(oobCode))
+          .then((info) => {
+            return auth.applyActionCode(oobCode);
+          })
           .then(() => {
             setSuccess(true);
             setError('');
@@ -67,7 +69,7 @@ const VerifyAccount = () => {
   useEffect(() => {
     if (success) {
       const timer = setTimeout(() => {
-        navigate('/provider-dashboard'); // or '/patient-dashboard' if you have role logic
+        navigate('/provider-dashboard'); // Redirect after email verification or recovery (update if role logic needed)
       }, 2000);
       return () => clearTimeout(timer);
     }

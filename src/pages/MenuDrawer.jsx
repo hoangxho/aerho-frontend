@@ -337,20 +337,18 @@ export default function MenuDrawer({
           />
         </div>
         {/* Referrals Page */}
-        {menuPage === "referrals" && (
-          <ReferralsSection
-            menuPage={menuPage}
-            setMenuPage={setMenuPage}
-            referralsThisPeriod={referralsThisPeriod}
-            freeMonthsEarned={freeMonthsEarned}
-            showReward={showReward}
-            neededForFreeMonth={neededForFreeMonth}
-            totalReferrals={totalReferrals}
-            referrals={referrals}
-            tabIndex={0}
-            aria-hidden={false}
-          />
-        )}
+        <ReferralsSection
+          menuPage={menuPage}
+          setMenuPage={setMenuPage}
+          referralsThisPeriod={referralsThisPeriod}
+          freeMonthsEarned={freeMonthsEarned}
+          showReward={showReward}
+          neededForFreeMonth={neededForFreeMonth}
+          totalReferrals={totalReferrals}
+          referrals={referrals}
+          tabIndex={menuPage === "referrals" ? 0 : -1}
+          aria-hidden={menuPage !== "referrals"}
+        />
         {/* Support Page */}
         <div
           className={`absolute top-0 left-full w-full transition-transform duration-500 ease-in-out ${menuPage === "support" ? "-translate-x-full opacity-100 pointer-events-auto" : "translate-x-0 opacity-0 pointer-events-none"}`}
@@ -641,7 +639,7 @@ function ReferralsSection({
   const [showReferralInfo, setShowReferralInfo] = React.useState(true);
   return (
     <div
-      className={`absolute top-0 left-full w-full transition-transform duration-500 ease-in-out ${menuPage === "referrals" ? "-translate-x-full" : "translate-x-0"}`}
+      className={`absolute top-0 left-full w-full transition-transform duration-500 ease-in-out ${menuPage === "referrals" ? "-translate-x-full opacity-100 pointer-events-auto" : "translate-x-0 opacity-0 pointer-events-none"}`}
       tabIndex={typeof tabIndex === "undefined" ? (menuPage === "referrals" ? 0 : -1) : tabIndex}
       aria-hidden={menuPage !== "referrals"}
       {...rest}
