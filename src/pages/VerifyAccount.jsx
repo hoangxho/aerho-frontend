@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { getAuth, PhoneAuthProvider, signInWithCredential } from 'firebase/auth';
+import { getAuth, PhoneAuthProvider, signInWithCredential, applyActionCode } from 'firebase/auth';
 
 const VerifyAccount = () => {
   const [code, setCode] = useState('');
@@ -9,6 +9,25 @@ const VerifyAccount = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const verificationId = location.state?.verificationId;
+
+  // Check for email verification link on mount
+  useEffect(() => {
+    const auth = getAuth();
+    const params = new URLSearchParams(window.location.search);
+    const mode = params.get('mode');
+    const oobCode = params.get('oobCode');
+
+    if (mode === 'verifyEmail' && oobCode) {
+      applyActionCode(auth, oobCode)
+        .then(() => {
+          setSuccess(true);
+          setError('');
+        })
+        .catch(() => {
+          setError('Invalid or expired verification link.');
+        });
+    }
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -44,6 +63,17 @@ const VerifyAccount = () => {
         <p className="text-gray-600 dark:text-gray-300 mb-6">
           Enter the 6-digit code sent to your phone to complete verification.
         </p>
+        {/* Email verification status messages */}
+        {success && (
+          <div className="mb-4 text-green-600 dark:text-green-400">
+            Email verified successfully! Redirecting...
+          </div>
+        )}
+        {error && (
+          <div className="mb-4 text-red-600 dark:text-red-400">
+            {error}
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="space-y-4">
           <input
             type="text"
@@ -53,8 +83,12 @@ const VerifyAccount = () => {
             className="w-full p-3 border rounded dark:bg-gray-700 dark:text-white"
             placeholder="Enter verification code"
           />
-          {error && <p className="text-red-500">{error}</p>}
-          {success && (
+          {/* Keep phone code error/success below input for phone verification */}
+          {/* Only show if not email verification */}
+          {!window.location.search.includes('mode=verifyEmail') && error && (
+            <p className="text-red-500">{error}</p>
+          )}
+          {!window.location.search.includes('mode=verifyEmail') && success && (
             <div>
               <p className="text-green-500">Account verified successfully!</p>
               <p className="text-sm text-gray-400 mt-1">Redirecting...</p>
