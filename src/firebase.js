@@ -29,7 +29,8 @@ const auth = getAuth(app);
 let recaptchaVerifierInstance;
 function getRecaptchaVerifier(containerId = 'recaptcha-container') {
   if (!recaptchaVerifierInstance) {
-    auth.appVerificationDisabledForTesting = false;
+    // Disable reCAPTCHA during local development/testing
+    auth.appVerificationDisabledForTesting = true;
     recaptchaVerifierInstance = new RecaptchaVerifier(auth, containerId, {
       size: 'invisible',
       callback: (response) => {
